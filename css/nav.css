@@ -2,19 +2,26 @@
 
 nav {
   display: flex;
-  background-color: #ff6600;
+  background-color: #fa7447;
   align-items: center;
   padding: 5px 20px;
   border-radius: 3px 3px 0 0;
+  height: 80px;
 }
 
 .navbar-brand {
   font-weight: bold;
+  padding-right: 10px;
 }
 
 .nav-link {
   font-size: 0.85rem;
   margin: 0 3px;
+}
+
+.main {
+  border-left: 2px black solid;
+  padding-left: 4px;
 }
 
 .nav-right {

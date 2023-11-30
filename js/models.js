@@ -12,7 +12,7 @@ class Story {
    *   - {title, author, url, username, storyId, createdAt}
    */
 
-  constructor({ storyId, title, author, url, username, createdAt }) {
+  constructor({ storyId, title, author, url, username, createdAt }) { // are these in the right order? 
     this.storyId = storyId;
     this.title = title;
     this.author = author;
@@ -24,8 +24,8 @@ class Story {
   /** Parses hostname out of URL and returns it. */
 
   getHostName() {
-    // UNIMPLEMENTED: complete this function!
-    return "hostname.com";
+    let storyURL = new URL(this.url);
+    return storyURL.hostname;
   }
 }
 
@@ -73,9 +73,48 @@ class StoryList {
    * Returns the new Story instance
    */
 
-  async addStory( /* user, newStory */) {
-    // UNIMPLEMENTED: complete this function!
+  async addStory( user, {title, author, url}) {
+
+    // Add story data to API
+    const token = user.loginToken;
+
+    const response = await axios({
+      method: "POST",
+      url: `${BASE_URL}/stories`,
+      data: { token, story: { title, author, url } }
+    });
+
+    // Make Story instance
+
+    const story = new Story(response.data.story);
+    this.stories.unshift(story);
+    user.ownStories.unshift(story);
+
+    return story;
   }
+
+/** Functionality for deleting stories */
+
+  // Remove deleted story from the DOM
+
+  async deleteStory (story) {
+    this.stories = this.stories.filter(s => s.storyId !== story.storyId);
+    currentUser.ownStories = currentUser.ownStories.filter(s => s.storyId !== story.storyId);
+    currentUser.favorites = currentUser.favorites.filter(s => s.storyId !== story.storyId);
+    await this.updateDeletions(story);
+  }
+
+  // Update API with deletion
+
+  async updateDeletions (story) {
+    const token = currentUser.loginToken;
+    const response = await axios({
+      url: `${BASE_URL}/stories/${story.storyId}`,
+      method: "DELETE",
+      data: { token }
+    });
+  }
+
 }
 
 
@@ -192,5 +231,57 @@ class User {
       console.error("loginViaStoredCredentials failed", err);
       return null;
     }
+  }
+
+
+
+//////////////////////
+
+  // Add a story to the user's list of favorites
+
+  async addFavorite(story) {
+    console.debug("addFavorite");
+    this.favorites.unshift(story);
+    await this.updateFavoritedStories(story);
+  }
+
+  // Remove a story from user's list of favorites
+
+  async removeFavorite(story) {
+    console.debug("removeFavorite");
+    this.favorites = this.favorites.filter(s => s.storyId !== story.storyId);
+    await this.updateUnfavoritedStories(story);
+
+    if (currTab === "favorites") {
+      putFavoritesListOnPage();
+    }
+  }
+
+  // Update API with favorited stories
+
+  async updateFavoritedStories(story) {
+    console.debug("updateFavoritedStories");
+    const token = this.loginToken;
+    const response = await axios({
+      url: `${BASE_URL}/users/${this.username}/favorites/${story.storyId}`,
+      method: "POST",
+      data: {token}
+    });
+  }
+
+  // Update API with unfavorited stories
+
+  async updateUnfavoritedStories(story) {
+    console.debug("updateUnfavoritedStories");
+    const token = this.loginToken;
+    const response = await axios({
+      url: `${BASE_URL}/users/${this.username}/favorites/${story.storyId}`,
+      method: "DELETE",
+      data: {token}
+    });
+  }
+
+  isFavorite(story) {
+    return this.favorites.some( s => (s.storyId === story.storyId));
   }
 }
